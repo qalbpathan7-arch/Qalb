@@ -1,0 +1,44 @@
+
+name: Build Qalb Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'qalb_apk_build_ready.zip'
+      - '.github/workflows/main.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Extract project
+        run: unzip -q qalb_apk_build_ready.zip -d project
+
+      - name: Build APK
+        run: |
+          WRAPPER=$(find project -name gradlew -type f | head -n 1)
+          if [ -z "$WRAPPER" ]; then
+            echo "Gradle wrapper not found"
+            exit 1
+          fi
+          DIR=$(dirname "$WRAPPER")
+          chmod +x "$WRAPPER"
+          cd "$DIR"
+          ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Qalb-APK
+          path: project/**/build/outputs/apk/debug/*.apk
